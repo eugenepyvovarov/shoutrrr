@@ -63,6 +63,14 @@ test('fetchReplies parses the conversation search and resolves authors', functio
     });
 });
 
+test('display normalization decodes HTML entities from X text', function () {
+    $normalized = app(XTweetDisplayNormalizer::class)->normalize([
+        'text' => 'codex-&gt;chatgpt &amp; more',
+    ]);
+
+    expect($normalized['text'])->toBe('codex->chatgpt & more');
+});
+
 test('fetchReplies maps 403 to unsupported (no paid tier)', function () {
     Http::fake(['api.twitter.com/2/tweets/search/recent*' => Http::response(['title' => 'Forbidden'], 403)]);
 

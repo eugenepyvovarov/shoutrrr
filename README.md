@@ -48,6 +48,7 @@ It's built for individuals and teams: invite collaborators into a shared workspa
 - 📝 **Composer** — draft with media and alt text, see a live character count for each network/account (including X Premium limits), and automatically split long posts into threads where the platform supports it.
 - 🚀 **Multi-account publishing** — fan one post out to many accounts at once, with optional per-platform overrides. Each target publishes independently and retries on failure.
 - 🗓️ **Queue & calendar** — set recurring posting slots (in your workspace's timezone), drop drafts into the queue, and review everything on a month calendar. Publish instantly whenever you like.
+- 💬 **Engagement inbox** — review X conversations with generated card links cleaned up, attached media shown as previews, and the selected reply preserved in the URL across refreshes.
 - 📊 **Analytics** — follower and post-count trends per account, plus per-post engagement (likes, reposts, replies, impressions) where the provider API supports it.
 - 🔗 **Connected accounts** — link accounts via OAuth (X, LinkedIn) or app password (Bluesky), group them into reusable sets, and get nudged when one needs reconnecting. Tokens are stored encrypted and refreshed automatically.
 - 👥 **Workspaces & team** — multiple workspaces with role-based memberships, email invitations, and ownership transfer. Every bit of data is scoped to its workspace.
