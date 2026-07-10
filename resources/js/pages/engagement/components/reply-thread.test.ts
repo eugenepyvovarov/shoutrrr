@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
@@ -34,4 +37,14 @@ describe('ReplyThread', () => {
             expect(render(platform)).not.toContain('>Open post<');
         },
     );
+
+    it('renders imported reply media previews', () => {
+        const source = readFileSync(
+            resolve(import.meta.dirname, 'reply-thread.tsx'),
+            'utf8',
+        );
+
+        expect(source).toContain('function ReplyMedia');
+        expect(source).toContain('media={reply.media}');
+    });
 });

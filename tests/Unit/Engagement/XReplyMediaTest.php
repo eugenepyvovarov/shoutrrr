@@ -5,6 +5,7 @@ use App\Models\ConnectedAccount;
 use App\Models\PostMedia;
 use App\Models\PostTargetReply;
 use App\Services\Engagement\Connectors\XEngagementConnector;
+use App\Services\Engagement\XTweetDisplayNormalizer;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\Storage;
 
 function xMediaConnector(): XEngagementConnector
 {
-    return new XEngagementConnector(app(Factory::class));
+    return new XEngagementConnector(app(Factory::class), app(XTweetDisplayNormalizer::class));
 }
 
 beforeEach(fn () => Storage::fake('public'));

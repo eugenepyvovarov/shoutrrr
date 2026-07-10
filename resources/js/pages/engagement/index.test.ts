@@ -38,3 +38,15 @@ it('uses shared disabled platform label helpers', () => {
     expect(source).toContain("from '@/lib/platforms'");
     expect(platformSource).toContain('Object.keys(enabled)');
 });
+
+it('persists the selected reply in the URL for refresh restoration', () => {
+    const source = readFileSync(
+        resolve(import.meta.dirname, 'index.tsx'),
+        'utf8',
+    );
+
+    expect(source).toContain(".get('reply')");
+    expect(source).toContain("url.searchParams.set('reply', replyId)");
+    expect(source).toContain("url.searchParams.delete('reply')");
+    expect(source).toContain('window.history.replaceState');
+});

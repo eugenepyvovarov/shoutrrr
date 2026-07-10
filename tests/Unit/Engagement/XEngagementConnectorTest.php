@@ -6,6 +6,7 @@ use App\Models\ConnectedAccount;
 use App\Models\PostTarget;
 use App\Models\PostTargetReply;
 use App\Services\Engagement\Connectors\XEngagementConnector;
+use App\Services\Engagement\XTweetDisplayNormalizer;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 
@@ -16,7 +17,7 @@ function xAccount(): ConnectedAccount
 
 function xConnector(): XEngagementConnector
 {
-    return new XEngagementConnector(app(Factory::class));
+    return new XEngagementConnector(app(Factory::class), app(XTweetDisplayNormalizer::class));
 }
 
 test('fetchReplies parses the conversation search and resolves authors', function () {
@@ -25,11 +26,13 @@ test('fetchReplies parses the conversation search and resolves authors', functio
             'data' => [
                 ['id' => '500', 'text' => 'root', 'author_id' => '111', 'created_at' => '2026-06-25T09:00:00.000Z'],
                 ['id' => '900', 'text' => 'my reply', 'author_id' => '111', 'created_at' => '2026-06-25T10:00:00.000Z', 'referenced_tweets' => [['type' => 'replied_to', 'id' => '500']]],
-                ['id' => '901', 'text' => 'great', 'author_id' => '222', 'created_at' => '2026-06-25T10:00:00.000Z', 'in_reply_to_user_id' => '111', 'referenced_tweets' => [['type' => 'replied_to', 'id' => '900']]],
+                ['id' => '901', 'text' => 'great https://t.co/card', 'author_id' => '222', 'created_at' => '2026-06-25T10:00:00.000Z', 'in_reply_to_user_id' => '111', 'referenced_tweets' => [['type' => 'replied_to', 'id' => '900']], 'attachments' => ['media_keys' => ['3_1']], 'entities' => ['urls' => [['url' => 'https://t.co/card', 'display_url' => 'pic.x.com/card', 'expanded_url' => 'https://x.com/devAlex/status/901/photo/1', 'start' => 6, 'end' => 23]]]],
             ],
             'includes' => ['users' => [
                 ['id' => '111', 'username' => 'owner', 'name' => 'Owner'],
                 ['id' => '222', 'username' => 'fan', 'name' => 'Fan', 'profile_image_url' => 'http://a/p.jpg'],
+            ], 'media' => [
+                ['media_key' => '3_1', 'type' => 'photo', 'url' => 'https://pbs.twimg.com/media/reply.jpg', 'alt_text' => 'reply image', 'width' => 640, 'height' => 480],
             ]],
         ]),
         '*liked_tweets*' => Http::response([
@@ -50,6 +53,8 @@ test('fetchReplies parses the conversation search and resolves authors', functio
     expect($result->replies[1]->parentRemoteId)->toBe('900');
     expect($result->replies[1]->authorHandle)->toBe('fan');
     expect($result->replies[1]->authorAvatarUrl)->toBe('http://a/p.jpg');
+    expect($result->replies[1]->text)->toBe('great');
+    expect($result->replies[1]->media[0]['url'])->toBe('https://pbs.twimg.com/media/reply.jpg');
     expect($result->replies[1]->isLiked)->toBeTrue();
     Http::assertSent(function ($request): bool {
         parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);

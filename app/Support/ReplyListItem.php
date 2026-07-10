@@ -23,6 +23,7 @@ final class ReplyListItem
             'author_name' => $reply->author_name,
             'author_avatar_url' => $reply->author_avatar_url,
             'text' => $reply->text,
+            'media' => $reply->external_media ?? [],
             'remote_created_at' => $reply->remote_created_at->toIso8601String(),
             'is_read' => $reply->read_at !== null,
             'is_liked' => $reply->liked_at !== null,

@@ -21,6 +21,33 @@ type Props = {
 const actionButton =
     'flex items-center justify-center rounded-md p-1 text-muted-foreground transition-colors';
 
+function ReplyMedia({ media }: { media: ReplyItem['media'] }) {
+    if (media.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="mt-2 grid max-w-sm grid-cols-2 gap-1.5">
+            {media.map((item, index) => (
+                <a
+                    key={`${item.url}-${index}`}
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="overflow-hidden rounded-lg border bg-muted/30"
+                >
+                    <img
+                        src={item.url}
+                        alt={item.alt_text ?? ''}
+                        loading="lazy"
+                        className="aspect-square h-full w-full object-cover"
+                    />
+                </a>
+            ))}
+        </div>
+    );
+}
+
 export function ReplyThread({
     postExcerpt,
     postUrl,
@@ -89,6 +116,7 @@ export function ReplyThread({
                             <p className="text-sm whitespace-pre-wrap">
                                 {reply.text}
                             </p>
+                            <ReplyMedia media={reply.media} />
                             <div className="mt-1 text-right text-[11px] text-primary-foreground/70">
                                 {reply.send_status === 'sending' ? (
                                     <span className="flex items-center justify-end gap-1">
@@ -175,6 +203,7 @@ export function ReplyThread({
                                 <p className="text-sm whitespace-pre-wrap">
                                     {reply.text}
                                 </p>
+                                <ReplyMedia media={reply.media} />
                             </div>
                             <div
                                 className={cn(

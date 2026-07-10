@@ -121,6 +121,7 @@ class FetchPostTargetReplies implements ShouldBeUnique, ShouldQueue
                 'author_name' => $fetched->authorName,
                 'author_avatar_url' => $fetched->authorAvatarUrl,
                 'text' => $fetched->text,
+                'external_media' => $fetched->media,
                 'remote_created_at' => $fetched->remoteCreatedAt,
                 'is_ours' => $this->isOwnReply($account, $fetched->authorHandle),
                 'fetched_at' => Date::now(),

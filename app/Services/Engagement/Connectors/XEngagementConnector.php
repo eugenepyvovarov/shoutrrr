@@ -14,6 +14,7 @@ use App\Models\PostMedia;
 use App\Models\PostTarget;
 use App\Models\PostTargetReply;
 use App\Services\Engagement\Contracts\EngagementConnector;
+use App\Services\Engagement\XTweetDisplayNormalizer;
 use App\Services\Usage\Concerns\TracksUsage;
 use App\Support\UsageOperation;
 use Carbon\CarbonImmutable;
@@ -35,7 +36,10 @@ class XEngagementConnector implements EngagementConnector
 
     private const int STATUS_POLL_MAX = 60;
 
-    public function __construct(private readonly HttpFactory $http) {}
+    public function __construct(
+        private readonly HttpFactory $http,
+        private readonly XTweetDisplayNormalizer $displayNormalizer,
+    ) {}
 
     public function fetchReplies(ConnectedAccount $account, PostTarget $target, array $credentials, ?CarbonImmutable $since): ReplyFetchResult
     {
@@ -53,9 +57,10 @@ class XEngagementConnector implements EngagementConnector
 
         $params = [
             'query' => $query,
-            'tweet.fields' => 'author_id,created_at,in_reply_to_user_id,referenced_tweets',
-            'expansions' => 'author_id',
-            'user.fields' => 'username,name,profile_image_url',
+            'tweet.fields' => 'attachments,author_id,created_at,entities,in_reply_to_user_id,referenced_tweets',
+            'expansions' => 'author_id,attachments.media_keys,referenced_tweets.id,referenced_tweets.id.author_id',
+            'media.fields' => 'media_key,type,url,preview_image_url,alt_text,width,height,duration_ms',
+            'user.fields' => 'id,username,name,profile_image_url',
             'max_results' => 100,
         ];
 
@@ -95,6 +100,10 @@ class XEngagementConnector implements EngagementConnector
             }
 
             $author = $users[(string) ($tweet['author_id'] ?? '')] ?? [];
+            $normalized = $this->displayNormalizer->normalize(
+                (array) $tweet,
+                (array) $response->json('includes', []),
+            );
             $parentRemoteId = (string) $rootId;
             foreach ((array) ($tweet['referenced_tweets'] ?? []) as $reference) {
                 if (($reference['type'] ?? null) === 'replied_to' && isset($reference['id'])) {
@@ -110,9 +119,10 @@ class XEngagementConnector implements EngagementConnector
                 authorHandle: (string) ($author['username'] ?? ''),
                 authorName: isset($author['name']) ? (string) $author['name'] : null,
                 authorAvatarUrl: isset($author['profile_image_url']) ? (string) $author['profile_image_url'] : null,
-                text: (string) ($tweet['text'] ?? ''),
+                text: $normalized['text'],
                 remoteCreatedAt: isset($tweet['created_at']) ? CarbonImmutable::parse((string) $tweet['created_at']) : Date::now(),
                 isLiked: $likedReplyIds === null ? null : in_array((string) $tweet['id'], $likedReplyIds, true),
+                media: $normalized['media'],
             );
         }
 

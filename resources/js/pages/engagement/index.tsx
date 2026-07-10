@@ -404,9 +404,16 @@ export default function EngagementIndex({
     engagementEnabled,
 }: PageProps) {
     const isMobile = useIsMobile();
-    const [selected, setSelected] = useState<ReplyItem | null>(null);
+    const [selectedId, setSelectedId] = useState<string | null>(() => {
+        if (typeof window === 'undefined') {
+            return null;
+        }
+
+        return new URLSearchParams(window.location.search).get('reply');
+    });
 
     const items = replies?.data ?? [];
+    const selected = items.find((reply) => reply.id === selectedId) ?? null;
     const disabledPlatforms = disabledPlatformLabels(engagementEnabled);
     const allEngagementDisabled =
         disabledPlatforms.length === platformKeys(engagementEnabled).length;
@@ -418,8 +425,32 @@ export default function EngagementIndex({
         filters.post !== '' ||
         filters.target !== '';
 
+    function updateSelectedReplyUrl(replyId: string | null) {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const url = new URL(window.location.href);
+        if (replyId === null) {
+            url.searchParams.delete('reply');
+        } else {
+            url.searchParams.set('reply', replyId);
+        }
+        window.history.replaceState(
+            window.history.state,
+            '',
+            `${url.pathname}${url.search}${url.hash}`,
+        );
+    }
+
+    function selectReply(reply: ReplyItem) {
+        setSelectedId(reply.id);
+        updateSelectedReplyUrl(reply.id);
+    }
+
     function clearSelection() {
-        setSelected(null);
+        setSelectedId(null);
+        updateSelectedReplyUrl(null);
     }
 
     return (
@@ -446,8 +477,8 @@ export default function EngagementIndex({
                             ) : (
                                 <ReplyStream
                                     replies={items}
-                                    selectedId={selected?.id ?? null}
-                                    onSelect={setSelected}
+                                    selectedId={selectedId}
+                                    onSelect={selectReply}
                                 />
                             )}
                         </Deferred>

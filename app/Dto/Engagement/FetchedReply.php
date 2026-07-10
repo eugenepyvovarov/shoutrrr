@@ -18,5 +18,7 @@ final readonly class FetchedReply
         public string $text,
         public CarbonImmutable $remoteCreatedAt,
         public ?bool $isLiked = null,
+        /** @var list<array<string, mixed>> */
+        public array $media = [],
     ) {}
 }

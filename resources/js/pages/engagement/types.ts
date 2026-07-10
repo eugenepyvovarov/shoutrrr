@@ -9,6 +9,13 @@ export type ReplyItem = {
     author_name: string | null;
     author_avatar_url: string | null;
     text: string;
+    media: Array<{
+        type: string;
+        url: string;
+        alt_text: string | null;
+        width: number | null;
+        height: number | null;
+    }>;
     remote_created_at: string;
     is_read: boolean;
     is_liked: boolean;

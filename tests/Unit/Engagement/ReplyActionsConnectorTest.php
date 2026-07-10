@@ -8,6 +8,7 @@ use App\Services\Atproto\DPoP;
 use App\Services\Engagement\Connectors\BlueskyEngagementConnector;
 use App\Services\Engagement\Connectors\LinkedInEngagementConnector;
 use App\Services\Engagement\Connectors\XEngagementConnector;
+use App\Services\Engagement\XTweetDisplayNormalizer;
 use Illuminate\Http\Client\Factory;
 use Illuminate\Support\Facades\Http;
 
@@ -18,7 +19,7 @@ function blueskyActionConnector(): BlueskyEngagementConnector
 
 function xActionConnector(): XEngagementConnector
 {
-    return new XEngagementConnector(app(Factory::class));
+    return new XEngagementConnector(app(Factory::class), app(XTweetDisplayNormalizer::class));
 }
 
 function linkedinActionConnector(): LinkedInEngagementConnector

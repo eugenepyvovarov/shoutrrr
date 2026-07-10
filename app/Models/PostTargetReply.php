@@ -30,6 +30,7 @@ use Override;
  * @property string|null $author_name
  * @property string|null $author_avatar_url
  * @property string $text
+ * @property list<array<string, mixed>>|null $external_media
  * @property CarbonImmutable $remote_created_at
  * @property CarbonImmutable|null $read_at
  * @property ReplyStatus $status
@@ -52,6 +53,7 @@ use Override;
     'author_name',
     'author_avatar_url',
     'text',
+    'external_media',
     'remote_created_at',
     'read_at',
     'status',
@@ -88,6 +90,7 @@ class PostTargetReply extends Model
             'status' => ReplyStatus::class,
             'is_ours' => 'boolean',
             'send_status' => SendStatus::class,
+            'external_media' => 'array',
             'liked_at' => 'immutable_datetime',
             'remote_created_at' => 'immutable_datetime',
             'read_at' => 'immutable_datetime',
