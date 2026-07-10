@@ -22,6 +22,8 @@ final class UsageOperation
 
     public const string REPLIES_FETCH = 'replies_fetch';
 
+    public const string LIKES_FETCH = 'likes_fetch';
+
     public const string REPLY_SEND = 'reply_send';
 
     public const string REPLY_LIKE = 'reply_like';
