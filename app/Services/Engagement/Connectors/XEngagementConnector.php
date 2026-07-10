@@ -45,7 +45,7 @@ class XEngagementConnector implements EngagementConnector
             return ReplyFetchResult::failed('Target has no remote id.');
         }
 
-        $query = "conversation_id:{$rootId} -from:{$account->handle}";
+        $query = "conversation_id:{$rootId} -from:".ltrim($account->handle, '@');
 
         $params = [
             'query' => $query,
