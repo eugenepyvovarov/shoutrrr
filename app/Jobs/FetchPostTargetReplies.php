@@ -6,6 +6,7 @@ namespace App\Jobs;
 
 use App\Enums\Platform;
 use App\Exceptions\TokenRefreshException;
+use App\Models\ConnectedAccount;
 use App\Models\PostTarget;
 use App\Models\PostTargetReply;
 use App\Notifications\NewRepliesNotification;
@@ -123,11 +124,12 @@ class FetchPostTargetReplies implements ShouldBeUnique, ShouldQueue
                     'author_avatar_url' => $fetched->authorAvatarUrl,
                     'text' => $fetched->text,
                     'remote_created_at' => $fetched->remoteCreatedAt,
+                    'is_ours' => $this->isOwnReply($account, $fetched->authorHandle),
                     'fetched_at' => Date::now(),
                 ],
             );
 
-            if ($reply->wasRecentlyCreated) {
+            if ($reply->wasRecentlyCreated && ! $reply->is_ours) {
                 $inserted[] = $reply;
             }
         }
@@ -174,6 +176,12 @@ class FetchPostTargetReplies implements ShouldBeUnique, ShouldQueue
 
             $reply->forceFill(['conversation_remote_id' => $conversationRemoteId])->saveQuietly();
         });
+    }
+
+    private function isOwnReply(ConnectedAccount $account, string $authorHandle): bool
+    {
+        return mb_strtolower(ltrim((string) $account->handle, '@'))
+            === mb_strtolower(ltrim($authorHandle, '@'));
     }
 
     /**

@@ -45,19 +45,19 @@ class XEngagementConnector implements EngagementConnector
             return ReplyFetchResult::failed('Target has no remote id.');
         }
 
-        $query = "conversation_id:{$rootId} -from:".ltrim($account->handle, '@');
+        // Fetch the complete recent conversation so that replies to one of our
+        // replies retain their parent row in the local conversation graph.
+        // Filtering our handle here would drop that parent; the job marks
+        // matching authors as ours after the fetch.
+        $query = "conversation_id:{$rootId}";
 
         $params = [
             'query' => $query,
-            'tweet.fields' => 'author_id,created_at,in_reply_to_user_id',
+            'tweet.fields' => 'author_id,created_at,in_reply_to_user_id,referenced_tweets',
             'expansions' => 'author_id',
             'user.fields' => 'username,name,profile_image_url',
             'max_results' => 100,
         ];
-
-        if ($since !== null) {
-            $params['start_time'] = $since->toIso8601ZuluString();
-        }
 
         try {
             $response = $this->http
@@ -82,12 +82,25 @@ class XEngagementConnector implements EngagementConnector
 
         $replies = [];
         foreach ((array) $response->json('data', []) as $tweet) {
+            // The search result includes the root tweet itself. It is already
+            // represented by PostTarget and must not become a reply row.
+            if ((string) ($tweet['id'] ?? '') === (string) $rootId) {
+                continue;
+            }
+
             $author = $users[(string) ($tweet['author_id'] ?? '')] ?? [];
+            $parentRemoteId = (string) $rootId;
+            foreach ((array) ($tweet['referenced_tweets'] ?? []) as $reference) {
+                if (($reference['type'] ?? null) === 'replied_to' && isset($reference['id'])) {
+                    $parentRemoteId = (string) $reference['id'];
+                    break;
+                }
+            }
 
             $replies[] = new FetchedReply(
                 remoteReplyId: (string) $tweet['id'],
                 remoteCid: null,
-                parentRemoteId: (string) $rootId,
+                parentRemoteId: $parentRemoteId,
                 authorHandle: (string) ($author['username'] ?? ''),
                 authorName: isset($author['name']) ? (string) $author['name'] : null,
                 authorAvatarUrl: isset($author['profile_image_url']) ? (string) $author['profile_image_url'] : null,

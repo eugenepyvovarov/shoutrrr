@@ -64,6 +64,25 @@ test('the job inserts fetched replies with the workspace id', function () {
     expect($target->fresh()->reply_fetched_at)->not->toBeNull();
 });
 
+test('the job marks replies authored by the connected account as ours', function () {
+    $target = targetWithPost();
+    $target->account()->update(['handle' => '@owner']);
+
+    fakeFetch([
+        new FetchedReply('at://ours', 'c1', 'at://root', 'owner', 'Owner', null, 'my reply', CarbonImmutable::now()),
+        new FetchedReply('at://child', 'c2', 'at://ours', 'fan', 'Fan', null, 'a response', CarbonImmutable::now()),
+    ]);
+
+    (new FetchPostTargetReplies($target))->handle(app(EngagementConnectorRegistry::class), app(TokenManager::class));
+
+    $ours = PostTargetReply::withoutGlobalScopes()->where('remote_reply_id', 'at://ours')->firstOrFail();
+    $child = PostTargetReply::withoutGlobalScopes()->where('remote_reply_id', 'at://child')->firstOrFail();
+
+    expect($ours->is_ours)->toBeTrue()
+        ->and($child->is_ours)->toBeFalse()
+        ->and($child->conversation_remote_id)->toBe('at://ours');
+});
+
 test('re-running the job does not duplicate replies', function () {
     $target = targetWithPost();
     $replies = [new FetchedReply('at://r1', 'c1', 'at://root', 'fan', 'Fan', null, 'nice', CarbonImmutable::now())];

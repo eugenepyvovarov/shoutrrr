@@ -23,9 +23,12 @@ test('fetchReplies parses the conversation search and resolves authors', functio
     Http::fake([
         'api.twitter.com/2/tweets/search/recent*' => Http::response([
             'data' => [
-                ['id' => '900', 'text' => 'great', 'author_id' => '222', 'created_at' => '2026-06-25T10:00:00.000Z', 'in_reply_to_user_id' => '111'],
+                ['id' => '500', 'text' => 'root', 'author_id' => '111', 'created_at' => '2026-06-25T09:00:00.000Z'],
+                ['id' => '900', 'text' => 'my reply', 'author_id' => '111', 'created_at' => '2026-06-25T10:00:00.000Z', 'referenced_tweets' => [['type' => 'replied_to', 'id' => '500']]],
+                ['id' => '901', 'text' => 'great', 'author_id' => '222', 'created_at' => '2026-06-25T10:00:00.000Z', 'in_reply_to_user_id' => '111', 'referenced_tweets' => [['type' => 'replied_to', 'id' => '900']]],
             ],
             'includes' => ['users' => [
+                ['id' => '111', 'username' => 'owner', 'name' => 'Owner'],
                 ['id' => '222', 'username' => 'fan', 'name' => 'Fan', 'profile_image_url' => 'http://a/p.jpg'],
             ]],
         ]),
@@ -36,14 +39,18 @@ test('fetchReplies parses the conversation search and resolves authors', functio
     $result = xConnector()->fetchReplies(xAccount(), $target, ['access_token' => 't'], null);
 
     expect($result->isOk())->toBeTrue();
-    expect($result->replies)->toHaveCount(1);
+    expect($result->replies)->toHaveCount(2);
     expect($result->replies[0]->remoteReplyId)->toBe('900');
-    expect($result->replies[0]->authorHandle)->toBe('fan');
-    expect($result->replies[0]->authorAvatarUrl)->toBe('http://a/p.jpg');
+    expect($result->replies[0]->parentRemoteId)->toBe('500');
+    expect($result->replies[0]->authorHandle)->toBe('owner');
+    expect($result->replies[1]->remoteReplyId)->toBe('901');
+    expect($result->replies[1]->parentRemoteId)->toBe('900');
+    expect($result->replies[1]->authorHandle)->toBe('fan');
+    expect($result->replies[1]->authorAvatarUrl)->toBe('http://a/p.jpg');
     Http::assertSent(function ($request): bool {
         parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
 
-        return ($query['query'] ?? null) === 'conversation_id:500 -from:owner';
+        return ($query['query'] ?? null) === 'conversation_id:500';
     });
 });
 
