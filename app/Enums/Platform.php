@@ -49,7 +49,7 @@ enum Platform: string
             // scope that call 403s ("Missing required OAuth2 scopes: users.email").
             // `media.write` is required to upload media to the v2 /2/media/upload
             // endpoint (the v1.1 endpoint was deprecated 2025-03-31).
-            self::X => ['users.read', 'users.email', 'tweet.read', 'tweet.write', 'media.write', 'offline.access'],
+            self::X => ['users.read', 'users.email', 'tweet.read', 'tweet.write', 'like.read', 'like.write', 'media.write', 'offline.access'],
             self::LinkedIn => ['openid', 'profile', 'email', 'w_member_social'],
             self::Bluesky => [],
             self::Facebook => ['pages_show_list', 'pages_read_engagement', 'pages_manage_posts', 'pages_read_user_content', 'pages_manage_engagement', 'read_insights', 'business_management'],

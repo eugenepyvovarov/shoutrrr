@@ -80,6 +80,12 @@ class XEngagementConnector implements EngagementConnector
             $users[(string) $user['id']] = $user;
         }
 
+        $replyIds = array_values(array_filter(
+            array_map(static fn (mixed $tweet): string => (string) ($tweet['id'] ?? ''), (array) $response->json('data', [])),
+            static fn (string $id): bool => $id !== '' && $id !== (string) $rootId,
+        ));
+        $likedReplyIds = $this->fetchLikedReplyIds($account, (string) ($credentials['access_token'] ?? ''), $replyIds);
+
         $replies = [];
         foreach ((array) $response->json('data', []) as $tweet) {
             // The search result includes the root tweet itself. It is already
@@ -106,10 +112,69 @@ class XEngagementConnector implements EngagementConnector
                 authorAvatarUrl: isset($author['profile_image_url']) ? (string) $author['profile_image_url'] : null,
                 text: (string) ($tweet['text'] ?? ''),
                 remoteCreatedAt: isset($tweet['created_at']) ? CarbonImmutable::parse((string) $tweet['created_at']) : Date::now(),
+                isLiked: $likedReplyIds === null ? null : in_array((string) $tweet['id'], $likedReplyIds, true),
             );
         }
 
         return ReplyFetchResult::ok($replies);
+    }
+
+    /**
+     * @param  list<string>  $replyIds
+     * @return list<string>|null Null means the token cannot read likes yet.
+     */
+    private function fetchLikedReplyIds(ConnectedAccount $account, string $token, array $replyIds): ?array
+    {
+        if ($replyIds === []) {
+            return [];
+        }
+
+        $remaining = array_fill_keys($replyIds, true);
+        $liked = [];
+        $nextToken = null;
+
+        // Stop once all replies in this conversation are resolved, or after a
+        // bounded number of pages for large like lists.
+        for ($page = 0; $page < 10; $page++) {
+            $params = ['tweet.fields' => 'id', 'max_results' => 100];
+            if ($nextToken !== null) {
+                $params['pagination_token'] = $nextToken;
+            }
+
+            try {
+                $response = $this->http
+                    ->withToken($token)
+                    ->acceptJson()
+                    ->get(self::BASE.'/users/'.$account->remote_account_id.'/liked_tweets', $params);
+            } catch (ConnectionException) {
+                return null;
+            }
+
+            $this->meter(UsageCategory::ExternalApi, UsageOperation::LIKES_FETCH, $account, $response);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            foreach ((array) $response->json('data', []) as $tweet) {
+                $id = (string) ($tweet['id'] ?? '');
+                if ($id !== '' && isset($remaining[$id])) {
+                    $liked[$id] = true;
+                    unset($remaining[$id]);
+                }
+            }
+
+            if ($remaining === []) {
+                break;
+            }
+
+            $nextToken = $response->json('meta.next_token');
+            if (! is_string($nextToken) || $nextToken === '') {
+                break;
+            }
+        }
+
+        return array_map(static fn (int|string $id): string => (string) $id, array_keys($liked));
     }
 
     public function postReply(ConnectedAccount $account, PostTargetReply $parent, string $text, array $credentials, array $media = []): ReplyPostResult

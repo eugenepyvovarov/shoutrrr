@@ -32,6 +32,9 @@ test('fetchReplies parses the conversation search and resolves authors', functio
                 ['id' => '222', 'username' => 'fan', 'name' => 'Fan', 'profile_image_url' => 'http://a/p.jpg'],
             ]],
         ]),
+        '*liked_tweets*' => Http::response([
+            'data' => [['id' => '901']],
+        ]),
     ]);
 
     $target = PostTarget::factory()->create(['platform' => Platform::X, 'remote_id' => '500', 'remote_ids' => ['500']]);
@@ -47,6 +50,7 @@ test('fetchReplies parses the conversation search and resolves authors', functio
     expect($result->replies[1]->parentRemoteId)->toBe('900');
     expect($result->replies[1]->authorHandle)->toBe('fan');
     expect($result->replies[1]->authorAvatarUrl)->toBe('http://a/p.jpg');
+    expect($result->replies[1]->isLiked)->toBeTrue();
     Http::assertSent(function ($request): bool {
         parse_str((string) parse_url($request->url(), PHP_URL_QUERY), $query);
 
@@ -73,4 +77,28 @@ test('postReply posts an in_reply_to tweet', function () {
     expect($result->remoteReplyId)->toBe('999');
     Http::assertSent(fn ($req) => str_contains($req->url(), '/2/tweets')
         && $req['reply']['in_reply_to_tweet_id'] === '900');
+});
+
+test('likeReply calls the X likes endpoint', function () {
+    Http::fake(['api.twitter.com/2/users/111/likes' => Http::response(['data' => ['liked' => true]])]);
+
+    $reply = PostTargetReply::factory()->create(['platform' => Platform::X, 'remote_reply_id' => '900']);
+
+    $result = xConnector()->likeReply(xAccount(), $reply, ['access_token' => 't']);
+
+    expect($result->isOk())->toBeTrue();
+    Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+        && $request['tweet_id'] === '900');
+});
+
+test('unlikeReply calls the X likes endpoint', function () {
+    Http::fake(['api.twitter.com/2/users/111/likes/900' => Http::response([], 204)]);
+
+    $reply = PostTargetReply::factory()->create(['platform' => Platform::X, 'remote_reply_id' => '900']);
+
+    $result = xConnector()->unlikeReply(xAccount(), $reply, null, ['access_token' => 't']);
+
+    expect($result->isOk())->toBeTrue();
+    Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+        && str_ends_with($request->url(), '/2/users/111/likes/900'));
 });

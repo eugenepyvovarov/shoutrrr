@@ -16,6 +16,8 @@ test('x scopes include users.email so Socialite can read confirmed_email', funct
     // 403s unless the users.email scope was granted. Regression guard for that.
     expect(Platform::X->scopes())->toContain('users.email')
         ->and(Platform::X->scopes())->toContain('tweet.write')
+        ->and(Platform::X->scopes())->toContain('like.read')
+        ->and(Platform::X->scopes())->toContain('like.write')
         // media.write is required for v2 media upload (/2/media/upload).
         ->and(Platform::X->scopes())->toContain('media.write');
 });

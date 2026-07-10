@@ -112,21 +112,29 @@ class FetchPostTargetReplies implements ShouldBeUnique, ShouldQueue
         $inserted = [];
 
         foreach ($result->replies as $fetched) {
+            $attributes = [
+                'workspace_id' => $post->workspace_id,
+                'platform' => $target->platform,
+                'remote_cid' => $fetched->remoteCid,
+                'parent_remote_id' => $fetched->parentRemoteId,
+                'author_handle' => $fetched->authorHandle,
+                'author_name' => $fetched->authorName,
+                'author_avatar_url' => $fetched->authorAvatarUrl,
+                'text' => $fetched->text,
+                'remote_created_at' => $fetched->remoteCreatedAt,
+                'is_ours' => $this->isOwnReply($account, $fetched->authorHandle),
+                'fetched_at' => Date::now(),
+            ];
+            if ($fetched->isLiked === true) {
+                $attributes['liked_at'] = Date::now();
+            } elseif ($fetched->isLiked === false) {
+                $attributes['liked_at'] = null;
+                $attributes['like_remote_id'] = null;
+            }
+
             $reply = PostTargetReply::withoutGlobalScopes()->updateOrCreate(
                 ['post_target_id' => $target->id, 'remote_reply_id' => $fetched->remoteReplyId],
-                [
-                    'workspace_id' => $post->workspace_id,
-                    'platform' => $target->platform,
-                    'remote_cid' => $fetched->remoteCid,
-                    'parent_remote_id' => $fetched->parentRemoteId,
-                    'author_handle' => $fetched->authorHandle,
-                    'author_name' => $fetched->authorName,
-                    'author_avatar_url' => $fetched->authorAvatarUrl,
-                    'text' => $fetched->text,
-                    'remote_created_at' => $fetched->remoteCreatedAt,
-                    'is_ours' => $this->isOwnReply($account, $fetched->authorHandle),
-                    'fetched_at' => Date::now(),
-                ],
+                $attributes,
             );
 
             if ($reply->wasRecentlyCreated && ! $reply->is_ours) {

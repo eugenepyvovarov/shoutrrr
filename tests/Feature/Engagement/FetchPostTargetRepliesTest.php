@@ -83,6 +83,21 @@ test('the job marks replies authored by the connected account as ours', function
         ->and($child->conversation_remote_id)->toBe('at://ours');
 });
 
+test('the job synchronizes a fetched remote like state', function () {
+    $target = targetWithPost();
+    $reply = new FetchedReply('at://liked', 'c1', 'at://root', 'fan', 'Fan', null, 'nice', CarbonImmutable::now(), true);
+
+    fakeFetch([$reply]);
+    (new FetchPostTargetReplies($target))->handle(app(EngagementConnectorRegistry::class), app(TokenManager::class));
+
+    expect(PostTargetReply::withoutGlobalScopes()->firstOrFail()->liked_at)->not->toBeNull();
+
+    fakeFetch([new FetchedReply('at://liked', 'c1', 'at://root', 'fan', 'Fan', null, 'nice', CarbonImmutable::now(), false)]);
+    (new FetchPostTargetReplies($target))->handle(app(EngagementConnectorRegistry::class), app(TokenManager::class));
+
+    expect(PostTargetReply::withoutGlobalScopes()->firstOrFail()->liked_at)->toBeNull();
+});
+
 test('re-running the job does not duplicate replies', function () {
     $target = targetWithPost();
     $replies = [new FetchedReply('at://r1', 'c1', 'at://root', 'fan', 'Fan', null, 'nice', CarbonImmutable::now())];

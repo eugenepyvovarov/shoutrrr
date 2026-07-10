@@ -17,5 +17,6 @@ final readonly class FetchedReply
         public ?string $authorAvatarUrl,
         public string $text,
         public CarbonImmutable $remoteCreatedAt,
+        public ?bool $isLiked = null,
     ) {}
 }
